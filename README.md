@@ -14,30 +14,36 @@ This implementation is build upon the [PFGM++](https://github.com/Newbeeer/pfgmp
 Our approach updates the training and smapling processes of [PFGM++](https://github.com/Newbeeer/pfgmpp). You can train new models using `train.py` For instance, to train PPFM with $D=128$ one runs 
 
 ```sh
-python train.py --outdir=./cond-runs --data=./datasets/train_mayo_1_alt-512x512.zip --data_n=./datasets/train_mayo_1_alt-512x512.zip --cond=0 --arch=ddpmpp --cbase=128 --ares=16,8,4 --cres=1,1,2,2,2,2,2 --patch_sz=256 --n_patches=1 --lr=2e-4 --dropout=0.1 --augment=0.15 --batch=32 --fp16=1 --seed=41 --pfgmpp=1 --aug_dim=128
+python train.py --outdir=./cond-runs --data=./datasets/train_mayo_1_alt-512x512.zip \
+--data_n=./datasets/train_mayo_1_alt-512x512.zip --cond=0 --arch=ddpmpp \
+--cbase=128 --ares=16,8,4 --cres=1,1,2,2,2,2,2 --patch_sz=256 --n_patches=1 \
+--lr=2e-4 --dropout=0.1 --augment=0.15 --batch=32 --fp16=1 --seed=41 \
+--pfgmpp=1 --aug_dim=128
 
-exp_name: name of experiments
+data: data to be used (in .pt format)
+data_n: data to be used (in .pt format). Data=data_n yields version of training used in the paper. 
 aug_dim: D (additional dimensions)  
 arch: model architectures. options: ncsnpp | ddpmpp
 pfgmpp: use PFGM++ framework, otherwise diffusion models (D\to\infty case). options: 0 | 1
-resume_path: path to the resuming checkpoint
-```
 
+```
+To get the two other models presented in the paper simply adjust `--pfgmpp` and `--aug_dim`
+ 
 ## Image denoising using PFGM++
-Download pretrained weights and place in ./training-runs/. Currently the generate_cond.py scripts requires dummy .dcm files in ./dicoms/ folder. One can easly adjust the code to circumvent this, however. To inference on the Mayo low-dose CT validation set using the best performing model ($D=128$) run: 
+Download pretrained weights and place in ./cond-runs/. Currently the generate_cond.py scripts requires dummy .dcm files in ./dicoms/ folder. One can easly adjust the code to circumvent this, however. To inference on the Mayo low-dose CT validation set using the best performing model ($D=64$) run: 
   ```zsh
   python generate_cond.py \
-        --network=./training_runs/ddpmpp-D-128/training-state-003201.pt --data=val_mayo_3_alt \
-        --steps=64 --hijack=10 --weight=0.95 --batch=1 --aug_dim=128
+        --network=./cond_runs//training-state-003201.pt --batch=1 --data=val_mayo_1_alt \
+--aug_dim=64 --steps=8 --hijack=1 --weight=0.7 --minmax train_mayo_1_alt_minmax
 
 network: results used for inference 
 data: data to be used (in .pt format)
-steps: T (Algorithm 3) 
-hijack: tau=T-hijack (Algorithm 3) 
-weight: w (Algorithm 3) 
+steps: T (Algorithm 2) 
+hijack: tau=T-hijack (Algorithm 2) 
+weight: w (Algorithm 2) 
 aug_dim: D (additional dimensions)  
 ```
-  
+For the $D \rightarrow \infty$ case, simply omitt the `--aug_dim` flag. 
 
 ## Checkpoints
 We are unfortunately not able to share the checkpoints for the, proprietary, prior CT dataset. Checkpoints for the Mayo low-dose CT dataset are available (link will be updated) [here](https://drive.google.com/drive/folders/1mxRpIQgyuI2iDrMGgYJX-wuxzoX3NM6j?usp=drive_link). As with [PFGM++](https://github.com/Newbeeer/pfgmpp), most hyperparameters are taken directly from [EDM](https://github.com/NVlabs/edm). 
@@ -45,7 +51,6 @@ We are unfortunately not able to share the checkpoints for the, proprietary, pri
 | --------------------------------- | :----------------------------------------------------------- | -------- | :----------------------------------------------------------: |
 | ddpmpp-D-64              | [`PFGMpp_mayo_3mm_weights/D=64/`](https://drive.google.com/drive/folders/1CFNG_9Z3Aag7_C5OUEA5J2aDiighDyV3?usp=drive_link) | 64  |      `--cond=0 --arch=ddpmpp --cbase=128 --ares=16,8,4 --cres=1,1,2,2,2,2,2 --lr=2e-4 --dropout=0.1 --augment=0.15 --patch_sz=256 --n_patches=1 --batch=32 --fp16=1 --seed=41 --pfgmpp=1 --aug_dim=64`       |
 | ddpmpp-D-128             | [`PFGMpp_mayo_3mm_weights/D=128/`](https://drive.google.com/drive/folders/1J37uKHXim7f0iWzntie1AFlJHOamHNsZ?usp=drive_link) | 128  |      `--cond=0 --arch=ddpmpp --cbase=128 --ares=16,8,4 --cres=1,1,2,2,2,2,2 --lr=2e-4 --dropout=0.1 --augment=0.15 --patch_sz=256 --n_patches=1 --batch=32 --fp16=1 --seed=41 --pfgmpp=1 --aug_dim=128`      |
-| ddpmpp-D-2048 | [`PFGMpp_mayo_3mm_weights/D=2048/`](https://drive.google.com/drive/folders/1So7V-EKDIWVfD1xVgxzkJ58mIdJVm5SK?usp=drive_link) | 2048  |      `--cond=0 --arch=ddpmpp --cbase=128 --ares=16,8,4 --cres=1,1,2,2,2,2,2 --lr=2e-4 --dropout=0.1 --augment=0.15 --patch_sz=256 --n_patches=1 --batch=32 --fp16=1 --seed=41 --pfgmpp=1 --aug_dim=2048`      |
 | ddpmpp-D-inf (EDM)        | [`PFGMpp_mayo_3mm_weights/D=infty/`](https://drive.google.com/drive/folders/1-1eeJitL3Cg_cYUUoYC81JtT-7UF6sxz?usp=drive_link) | $\infty$ |                   `--cond=0 --arch=ddpmpp --cbase=128 --ares=16,8,4 --cres=1,1,2,2,2,2,2 --lr=2e-4 --dropout=0.1 --augment=0.15 --patch_sz=256 --n_patches=1 --batch=32 --fp16=1 --seed=41 --pfgmpp=0`                   |
 
 ## Preparing datasets 
