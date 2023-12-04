@@ -15,9 +15,7 @@ Our approach updates the training and smapling processes of [PFGM++](https://git
 
 ```sh
 python train.py --outdir=./cond-runs --data=./datasets/train_mayo_1_alt-512x512.zip \
---data_n=./datasets/train_mayo_1_alt-512x512.zip --cond=0 --arch=ddpmpp \
---cbase=128 --ares=16,8,4 --cres=1,1,2,2,2,2,2 --patch_sz=256 --n_patches=1 \
---lr=2e-4 --dropout=0.1 --augment=0.15 --batch=32 --fp16=1 --seed=41 \
+--data_n=./datasets/train_mayo_1_alt-512x512.zip \
 --pfgmpp=1 --aug_dim=128
 
 data: data to be used (in .pt format)
