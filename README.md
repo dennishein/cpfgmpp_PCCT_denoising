@@ -51,11 +51,11 @@ We are unfortunately not able to share the checkpoints for the, proprietary, pri
 | ddpmpp-D-inf (EDM)        | [`PPFM_mayo_1mm_weights/D=infty/`](https://drive.google.com/file/d/1yl1jSDkCubURgDO8jPUUuQdrxGCt6CpI/view?usp=sharing) | $\infty$ |                   `--cond=0 --arch=ddpmpp --cbase=128 --ares=16,8,4 --cres=1,1,2,2,2,2,2 --lr=2e-4 --dropout=0.1 --augment=0.15 --patch_sz=256 --n_patches=1 --batch=32 --fp16=1 --seed=41 --pfgmpp=0`                   |
 
 ## Preparing datasets 
-Datasets are stored in the same format as in [StyleGAN](https://github.com/NVlabs/stylegan3): uncompressed ZIP archives containing uncompressed PNG files and a metadata file `dataset.json` for labels. Custom datasets can be created from a folder containing images; see [`python dataset_tool.py --help`](./docs/dataset-tool-help.txt) for more information. Updated dataset_tool_alt.py to read in data from .npy format. pt_to_np_mayo.ipynb will take the data tensor in .pt and save in .npy format that can be processed by dataset_tool_alt.py. You can find the Mayo data from the AAPM low-dose grand challenge [here](https://www.aapm.org/grandchallenge/lowdosect/). 
+Datasets are stored in the same format as in [StyleGAN](https://github.com/NVlabs/stylegan3): uncompressed ZIP archives containing uncompressed PNG files and a metadata file `dataset.json` for labels. Custom datasets can be created from a folder containing images; see [`python dataset_tool.py --help`](./docs/dataset-tool-help.txt) for more information. Updated dataset_tool_cond.py to read in data from .npy format. pt_to_np_mayo.ipynb will take the data tensor in .pt and save in .npy format that can be processed by dataset_tool_alt.py. You can find the Mayo data from the AAPM low-dose grand challenge [here](https://www.aapm.org/grandchallenge/lowdosect/). 
 
 ```.bash
-python dataset_tool_alt.py --source=./datasets_unzipped/train_mayo_3_alt/ \
-    --dest=datasets/mayo_3mm_alt-512x512.zip
+python dataset_tool_cond.py --source=./datasets_unzipped/train_mayo_1_alt/ \
+    --dest=datasets/mayo_1mm_alt-512x512.zip
 ```
 
 ## Instructions for setting up environment (from EDM)
