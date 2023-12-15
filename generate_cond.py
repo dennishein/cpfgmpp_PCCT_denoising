@@ -40,7 +40,6 @@ def edm_sampler(
     sigma_max = 380 # fix this 
     sigma_min = max(sigma_min, net.sigma_min)
     sigma_max = min(sigma_max, net.sigma_max)
-    #print(sigma_max)
     
     # Time step discretization.
     step_indices = torch.arange(num_steps, dtype=torch.float64, device=latents.device)
@@ -48,53 +47,11 @@ def edm_sampler(
     t_steps = torch.cat([net.round_sigma(t_steps), torch.zeros_like(t_steps[:1])]) # t_N = 0
     
     # Main sampling loop.
-    NFE = 0
+    NFE = 0 # sanity chgeck 
     if conditions is not None: # conditional case 
       if hijack > 0:
-        # Forward run 
-        if forward:
-          if 1==1:
-            if pfgmpp:
-              x_next = torch.tensor(low_pass(conditions), dtype=torch.float64).to('cuda:0')+latents.to(torch.float64)
-            else:
-              x_next = torch.tensor(low_pass(conditions), dtype=torch.float64).to('cuda:0')++latents.to(torch.float64)*t_steps[num_steps-hijack-1] 
-              #x_next = conditions.clone().to(torch.float64).to('cuda:0')+latents.to(torch.float64)*t_steps[num_steps-hijack-1] 
-          else: 
-            #x_next = torch.tensor(low_pass(conditions),dtype=torch.float64).to('cuda:0')
-            x_next = conditions.clone().to(torch.float64).to('cuda:0')
-            for i, (t_cur, t_next) in enumerate(zip(reversed(t_steps[(num_steps-hijack-1):-2]), reversed(t_steps[num_steps-hijack:-1]))):
-              x_cur = x_next
-              
-              # Increase noise temporarily.
-              gamma = min(S_churn / num_steps, np.sqrt(2) - 1) if S_min <= t_cur <= S_max else 0
-              t_hat = net.round_sigma(t_cur + gamma * t_cur)
-              x_hat = x_cur + (t_hat ** 2 - t_cur ** 2).sqrt() * S_noise * randn_like(x_cur)
-
-              # Euler step.
-              if uncond_score:
-                denoised = net(x_hat, t_hat, class_labels).to(torch.float64)
-              else:
-                denoised = net(torch.cat((conditions,x_hat),1), t_hat, class_labels).to(torch.float64)
-              d_cur = (x_hat - denoised) / t_hat
-              x_next = x_hat - (t_next - t_hat) * d_cur
-              NFE += 1
-
-              # Apply 2nd order correction. 
-              if i > 0:
-                  if uncond_score:
-                    denoised = net(x_next, t_next, class_labels).to(torch.float64)
-                  else:
-                    denoised = net(torch.cat((conditions,x_next),1), t_hat, class_labels).to(torch.float64)
-                  d_prime = (x_next - denoised) / t_next
-                  x_next = x_hat - (t_next - t_hat) * (0.5 * d_cur + 0.5 * d_prime)
-                  NFE += 1
-              
-        else:
-            #x_next = torch.tensor(low_pass(conditions),dtype=torch.float64).to('cuda:0')
-            #x_next = tv_batch(conditions)
-            x_next = conditions.clone().to(torch.float64).to('cuda:0')
+        x_next = conditions.clone().to(torch.float64).to('cuda:0')
         # Reverse run 
-        #pbar = tqdm.tqdm(total=hijack)
         for i, (t_cur, t_next) in enumerate(zip(t_steps[(num_steps-hijack-1):-2], t_steps[num_steps-hijack:-1])):
           x_cur = x_next
             
@@ -108,7 +65,7 @@ def edm_sampler(
             denoised = net(x_hat, t_hat, class_labels).to(torch.float64)
           else:
             denoised = net(torch.cat((conditions,x_hat),1), t_hat, class_labels).to(torch.float64)
-            #rint(denoised.size())
+            
           d_cur = (x_hat - denoised) / t_hat
           x_next = x_hat + (t_next - t_hat) * d_cur
           NFE += 1
@@ -125,53 +82,14 @@ def edm_sampler(
               NFE += 1
           
           # Data consistency step
-          #x_next = x_next*weight+torch.tensor(low_pass(conditions),dtype=torch.float64).to('cuda:0')*(1-weight)
-          #x_next = x_next*weight+tv_batch(conditions)*(1-weight)
           x_next = x_next*weight+conditions.clone().to(torch.float64).to('cuda:0')*(1-weight)
-          #pbar.update(1)
-        #pbar.close()
          
       else: # no hijack 
-        if forward:
-          #x_next = torch.tensor(low_pass(conditions),dtype=torch.float64).to('cuda:0')
-          x_next = conditions.clone().to(torch.float64).to('cuda:0')
-          #if pfgmpp:
-          #  x_next = torch.tensor(low_pass(conditions), dtype=torch.float64).to('cuda:0')+latents.to(torch.float64)
-          #else:
-          #  #x_next = torch.tensor(conditions, dtype=torch.float64).to('cuda:0')+latents.to(torch.float64)*t_steps[num_steps-hijack-1] 
-          #  x_next = conditions.clone().to('cuda:0')+latents.to(torch.float64)*t_steps[num_steps-hijack-1] 
-          for i, (t_cur, t_next) in enumerate(zip(reversed(t_steps[(num_steps-1):-2]), reversed(t_steps[num_steps:-1]))):
-            x_cur = x_next
-            
-            # Increase noise temporarily.
-            gamma = min(S_churn / num_steps, np.sqrt(2) - 1) if S_min <= t_cur <= S_max else 0
-            t_hat = net.round_sigma(t_cur + gamma * t_cur)
-            x_hat = x_cur + (t_hat ** 2 - t_cur ** 2).sqrt() * S_noise * randn_like(x_cur)
-
-            # Euler step.
-            if uncond_score:
-              denoised = net(x_hat, t_hat, class_labels).to(torch.float64)
-            else:
-              denoised = net(torch.cat((conditions,x_hat),1), t_hat, class_labels).to(torch.float64)
-            d_cur = (x_hat - denoised) / t_hat
-            x_next = x_hat - (t_next - t_hat) * d_cur
-            NFE += 1
-
-            # Apply 2nd order correction. 
-            if 1==2:#i > 0:
-                if uncond_score:
-                  denoised = net(x_next, t_next, class_labels).to(torch.float64)
-                else:
-                  denoised = net(torch.cat((conditions,x_next),1), t_hat, class_labels).to(torch.float64)
-                d_prime = (x_next - denoised) / t_next
-                x_next = x_hat - (t_next - t_hat) * (0.5 * d_cur + 0.5 * d_prime)
-                NFE += 1
+        if pfgmpp:
+          x_next = latents.to(torch.float64) 
         else:
-          if pfgmpp:
-            x_next = latents.to(torch.float64) 
-          else:
-            x_next = latents.to(torch.float64) * t_steps[0]
-        #pbar = tqdm.tqdm(total=num_steps)
+          x_next = latents.to(torch.float64) * t_steps[0]
+        
         for i, (t_cur, t_next) in enumerate(zip(t_steps[:-1], t_steps[1:])): # 0, ..., N-1
             x_cur = x_next
 
@@ -200,16 +118,13 @@ def edm_sampler(
                 NFE += 1
              
             # Data consistency step
-            x_next = x_next*weight+torch.tensor(low_pass(conditions), dtype=torch.float64).to('cuda:0')*(1-weight)
-            #pbar.update(1)
-        #pbar.close()
-        
+            x_next = x_next*weight+torch.tensor(low_pass(conditions), dtype=torch.float64).to('cuda:0')*(1-weight)        
     else: # unconditional case 
       if pfgmpp:
         x_next = latents.to(torch.float64)
       else:
         x_next = latents.to(torch.float64) * t_steps[0]
-      #pbar = tqdm.tqdm(total=num_steps)
+      
       for i, (t_cur, t_next) in enumerate(zip(t_steps[:-1], t_steps[1:])): # 0, ..., N-1
           x_cur = x_next
 
@@ -228,11 +143,7 @@ def edm_sampler(
               denoised = net(x_next, t_next, class_labels).to(torch.float64)
               d_prime = (x_next - denoised) / t_next
               x_next = x_hat + (t_next - t_hat) * (0.5 * d_cur + 0.5 * d_prime)
-          #pbar.update(1)
-     #pbar.close()    
 
-    #return torch.tensor(low_pass(x_next), dtype=torch.float64).to('cuda:0')
-    #print(f'NFE: {NFE}')
     return x_next
 #----------------------------------------------------------------------------
 # Generalized ablation sampler, representing the superset of all sampling
@@ -602,14 +513,8 @@ def main(network_pkl, data, saved_minmax, hijack, hijack_ext, forward, weight, u
         conditions = torch.cat((conditions,conditions),1)
       if saved_minmax is not None:
         conditions = map_to_zero_one_alt(conditions,minmax[0],minmax[1])
-        print(minmax[0])
-        print(minmax[1])
-        print(conditions.min())
-        print(conditions.max())
-      #if n_ch > 1:
-      #  conditions = setup_3d(conditions,n_ch)
+
       n_ch = conditions.size(1)//2
-      #print(n_ch)
       seeds = [0]*conditions.size(0) # override seeds option and run same for each sample
       conditions_iterator = iter(torch.utils.data.DataLoader(dataset=conditions,batch_size=max_batch_size))
       scaler = get_data_scaler(True)
@@ -668,6 +573,7 @@ def main(network_pkl, data, saved_minmax, hijack, hijack_ext, forward, weight, u
     lpips_list = []
     ssim_list = []
     psnr_list = []
+    sample = torch.tensor([])
     for batch_seeds in tqdm.tqdm(rank_batches, unit='batch', disable=(dist.get_rank() != 0)):
         torch.distributed.barrier()
         batch_size = len(batch_seeds)
@@ -742,71 +648,11 @@ def main(network_pkl, data, saved_minmax, hijack, hijack_ext, forward, weight, u
         #        PIL.Image.fromarray(image_np[:, :, 0], 'L').save(image_path)
         #    else:
         #        PIL.Image.fromarray(image_np, 'RGB').save(image_path)
+        sample = torch.cat((sample,images.detach().cpu()),dim=0)
        
-        # Save images.
-        if data is not None:
-          for i in range(images.size(0)):
-            # dcm used as dummy 
-            ds = load_dcm(fix_dicom_index(str(1),6),'./dicoms/i')
-            ds.Rows = images.size(2)
-            ds.Columns = images.size(3)
-           
-            if conditions.size(1) > 1:
-              for j in range(n_ch):
-                ds.InstanceNumber = count
-                
-                image_dir = os.path.join(outdir,'DL100')
-                os.makedirs(image_dir, exist_ok=True)
-                temp = np.array(images[i,j,:,:].detach().cpu(),dtype=np.int16)
-                ds.PixelData = temp.tobytes()
-                ds.save_as(image_dir+'/'+str(count)+'_DL100.dcm')
-
-                image_dir = os.path.join(outdir,'obs')
-                os.makedirs(image_dir, exist_ok=True)
-                temp = np.array(conditions[i,j,:,:].detach().cpu(),dtype=np.int16)
-                ds.PixelData = temp.tobytes()
-                ds.save_as(image_dir+'/'+str(count)+'.dcm')
-
-                image_dir = os.path.join(outdir,'diff')
-                os.makedirs(image_dir, exist_ok=True)
-                temp = np.array(images[i,j,:,:].detach().cpu()-conditions[i,j,:,:].detach().cpu(),dtype=np.int16)
-                ds.PixelData = temp.tobytes()
-                ds.save_as(image_dir+'/'+str(count)+'_diff.dcm')
-
-                image_dir = os.path.join(outdir,'truth')
-                os.makedirs(image_dir, exist_ok=True)
-                temp = np.array(conditions[i,j+n_ch,:,:].detach().cpu(),dtype=np.int16)
-                ds.PixelData = temp.tobytes()
-                ds.save_as(image_dir+'/'+str(count)+'_truth.dcm') 
-                count += 1  
-            else:
-              image_dir = os.path.join(outdir,'DL100')
-              os.makedirs(image_dir, exist_ok=True)
-              temp = np.array(images[i,0,:,:].detach().cpu(),dtype=np.int16)
-              ds.PixelData = temp.tobytes()
-              ds.save_as(image_dir+'/'+str(count)+'_DL100.dcm')
-
-              image_dir = os.path.join(outdir,'obs')
-              os.makedirs(image_dir, exist_ok=True)
-              temp = np.array(conditions[i,0,:,:].detach().cpu(),dtype=np.int16)
-              ds.PixelData = temp.tobytes()
-              ds.save_as(image_dir+'/'+str(count)+'.dcm')
-              count += 1
-        else:
-          for i in range(images.size(0)):
-            # dcm used as dummy 
-            ds = load_dcm(fix_dicom_index(str(count),6),'./dicoms/i')
-            ds.Rows = images.size(2)
-            ds.Columns = images.size(3)
-          
-            image_dir = outdir #os.path.join(outdir,'unconditional')
-            os.makedirs(image_dir, exist_ok=True)
-            temp = np.array(images[i,0,:,:].detach().cpu(),dtype=np.int16)
-            ds.PixelData = temp.tobytes()
-            ds.save_as(image_dir+'/'+str(count)+'.dcm')
-     
-            count += 1
-
+    # Save images.
+    torch.save(sample,outdir+'/sample.pt')
+        
     if get_image_metrics:
       lpips_avg = sum(lpips_list)/len(lpips_list)
       ssim_avg = sum(ssim_list)/len(ssim_list)
