@@ -27,10 +27,10 @@ aug_dim: D (additional dimensions)
 To get the two other models presented in the paper simply adjust `--pfgmpp` and `--aug_dim`
  
 ## Image denoising using PFGM++
-Download pretrained weights and place in ./cond-runs/. Currently the generate_cond.py scripts requires dummy .dcm files in ./dicoms/ folder. One can easly adjust the code to circumvent this, however. To inference on the Mayo low-dose CT validation set using the best performing model ($D=64$) run: 
+Download pretrained weights and place in ./PPFM_mayo_1mm_weights/. Currently the generate_cond.py scripts requires dummy .dcm files in ./dicoms/ folder. One can easly adjust the code to circumvent this, however. To inference on the Mayo low-dose CT validation set using the best performing model ($D=64$) run: 
   ```zsh
   python generate_cond.py \
-        --network=./cond_runs//training-state-003201.pt --batch=1 --data=val_mayo_1_alt \
+        --network=./PPFM_mayo_1mm_weights/D=64/training-state-003201.pt --batch=1 --data=val_mayo_1_alt \
 --aug_dim=64 --steps=8 --hijack=1 --weight=0.7 --minmax train_mayo_1_alt_minmax
 
 network: results used for inference 
@@ -43,7 +43,7 @@ aug_dim: D (additional dimensions)
 For the $D \rightarrow \infty$ case, simply omitt the `--aug_dim` flag. 
 
 ## Checkpoints
-We are unfortunately not able to share the checkpoints for the, proprietary, prior CT dataset. Checkpoints for the Mayo low-dose CT dataset are available (link will be updated) [here](https://drive.google.com/drive/folders/1mxRpIQgyuI2iDrMGgYJX-wuxzoX3NM6j?usp=drive_link). As with [PFGM++](https://github.com/Newbeeer/pfgmpp), most hyperparameters are taken directly from [EDM](https://github.com/NVlabs/edm). 
+Checkpoints for the Mayo low-dose CT dataset are available in links below. As with [PFGM++](https://github.com/Newbeeer/pfgmpp), most hyperparameters are taken directly from [EDM](https://github.com/NVlabs/edm). 
 | Model                             | Checkpoint path                                              | $D$      |                           Options                            |
 | --------------------------------- | :----------------------------------------------------------- | -------- | :----------------------------------------------------------: |
 | ddpmpp-D-64              | [`PPFM_mayo_1mm_weights/D=64/`](https://drive.google.com/file/d/1bOHmbdux9M2j06v3dzHNSsy_CqhghNV3/view?usp=sharing) | 64  |      `--cond=0 --arch=ddpmpp --cbase=128 --ares=16,8,4 --cres=1,1,2,2,2,2,2 --lr=2e-4 --dropout=0.1 --augment=0.15 --patch_sz=256 --n_patches=1 --batch=32 --fp16=1 --seed=41 --pfgmpp=1 --aug_dim=64`       |
