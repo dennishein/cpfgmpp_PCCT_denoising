@@ -30,7 +30,7 @@ To get the two other models presented in the paper simply adjust `--pfgmpp` and 
 Download pretrained weights and place in ./cond-runs/. Currently the generate_cond.py scripts requires dummy .dcm files in ./dicoms/ folder. One can easly adjust the code to circumvent this, however. To inference on the Mayo low-dose CT validation set using the best performing model ($D=64$) run: 
   ```zsh
   python generate_cond.py \
-        --network=./cond-runs/D=64/training-state-003201.pt --batch=1 --data=val_mayo_1_alt \
+        --network=./PPFM_mayo_1mm_weights/D=64/training-state-003201.pt --batch=1 --data=val_mayo_1_alt \
 --aug_dim=64 --steps=8 --hijack=1 --weight=0.7 --minmax train_mayo_1_alt_minmax
 
 network: results used for inference 
