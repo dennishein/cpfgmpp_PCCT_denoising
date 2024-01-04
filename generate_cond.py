@@ -651,6 +651,7 @@ def main(network_pkl, data, saved_minmax, hijack, hijack_ext, forward, weight, u
         sample = torch.cat((sample,images.detach().cpu()),dim=0)
        
     # Save images.
+    os.makedirs(outdir, exist_ok=True)
     torch.save(sample,outdir+'/sample.pt')
         
     if get_image_metrics:
