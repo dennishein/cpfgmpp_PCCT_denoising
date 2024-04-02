@@ -18,8 +18,8 @@ python train.py --outdir=./cond-runs --data=./datasets/train_mayo_1_alt-512x512.
 --data_n=./datasets/train_mayo_1_alt-512x512.zip \
 --pfgmpp=1 --aug_dim=128
 
-data: data to be used (in .pt format)
-data_n: data to be used (in .pt format). Data=data_n yields version of training used in the paper.
+data: data to be used (in .zip format)
+data_n: data to be used (in .zip format). Data=data_n yields version of training used in the paper.
 pfgmpp: use PFGM++ framework, otherwise diffusion models (D\to\infty case). options: 0 | 1
 aug_dim: D (additional dimensions)  
 
